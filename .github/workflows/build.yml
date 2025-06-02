@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -23,23 +24,32 @@ jobs:
         run: |
           git clone https://github.com/tari-project/tari-miner.git
           cd tari-miner
+          source $HOME/.cargo/env
           cargo build --release --target x86_64-unknown-linux-musl
           mkdir -p ../output/bin
           cp target/x86_64-unknown-linux-musl/release/tari_miner ../output/bin/
 
-      - name: Add run.sh
+      - name: Add run.sh script
         run: |
-          echo '#!/bin/bash
+          mkdir -p output
+          cat << 'EOF' > output/run.sh
+#!/bin/bash
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+echo "🚀 Menjalankan Tari Miner..."
 mkdir -p ~/.tari/config
+
 if [ ! -f ~/.tari/config/config.toml ]; then
-  echo "Membuat config.toml..."
+  echo "⚙️ Membuat konfigurasi default..."
   cat > ~/.tari/config/config.toml <<EOL
 [wallet]
 public_address = "12PTtTLvcmyTmZcJdtNRxWnSgfJh9arhpH2UMhebMvmP7w1ZKtfHwDRvKXVrgDTYebHWyz2oVqRXywudhntehFaqeaG"
 EOL
 fi
-\$SCRIPT_DIR/bin/tari_miner' > output/run.sh
+
+"\$SCRIPT_DIR/bin/tari_miner"
+EOF
+
           chmod +x output/run.sh
 
       - name: Archive binary
