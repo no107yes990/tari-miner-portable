@@ -1,0 +1,54 @@
+name: Build Tari Miner Static
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install Rust + MUSL
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          source $HOME/.cargo/env
+          rustup target add x86_64-unknown-linux-musl
+          sudo apt-get update
+          sudo apt-get install -y musl-tools build-essential
+
+      - name: Clone Tari Miner
+        run: |
+          git clone https://github.com/tari-project/tari-miner.git
+          cd tari-miner
+          cargo build --release --target x86_64-unknown-linux-musl
+          mkdir -p ../output/bin
+          cp target/x86_64-unknown-linux-musl/release/tari_miner ../output/bin/
+
+      - name: Add run.sh
+        run: |
+          echo '#!/bin/bash
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+mkdir -p ~/.tari/config
+if [ ! -f ~/.tari/config/config.toml ]; then
+  echo "Membuat config.toml..."
+  cat > ~/.tari/config/config.toml <<EOL
+[wallet]
+public_address = "12PTtTLvcmyTmZcJdtNRxWnSgfJh9arhpH2UMhebMvmP7w1ZKtfHwDRvKXVrgDTYebHWyz2oVqRXywudhntehFaqeaG"
+EOL
+fi
+\$SCRIPT_DIR/bin/tari_miner' > output/run.sh
+          chmod +x output/run.sh
+
+      - name: Archive binary
+        run: |
+          cd output
+          tar -czvf tari_miner_portable.tar.gz *
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tari_miner_portable
+          path: output/tari_miner_portable.tar.gz
