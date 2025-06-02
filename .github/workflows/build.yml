@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Install Rust + MUSL
         run: |
@@ -40,7 +40,7 @@ jobs:
           tar -czvf tari_miner_portable.tar.gz *
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: tari_miner_portable
           path: output/tari_miner_portable.tar.gz
